@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+class Video11 extends StatefulWidget {
+  const Video11({Key? key}) : super(key: key);
+
+  @override
+  State<Video11> createState() => _Video11State();
+}
+
+class _Video11State extends State<Video11> {
+  late VideoPlayerController _controller;
+  late Future<void>_video;
+
+  void initState(){
+    super.initState();
+    _controller =VideoPlayerController.network(
+        "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4"
+    );
+    _video=_controller.initialize();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+            onPressed: (){
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.arrow_back_ios,color: Colors.black,size: 30,)),
+        backgroundColor: Colors.white,
+      ),
+      body: FutureBuilder(
+        future: _video,
+        builder: (context,snapshot){
+          if(snapshot.connectionState == ConnectionState.done){
+            return Center(
+              child: AspectRatio(
+                aspectRatio: _controller.value.aspectRatio ,
+                child: VideoPlayer(_controller),
+              ),
+            );
+          }else{
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: (){
+          if(_controller.value.isPlaying){
+            setState(() {
+              _controller.pause();
+            });
+          }else{
+            setState(() {
+              _controller.play();
+            });
+          }
+        },
+        child: Icon(_controller.value.isPlaying?Icons.pause:Icons.play_arrow),
+      ),
+    );
+  }
+}
