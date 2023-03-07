@@ -1,0 +1,274 @@
+
+
+import 'dart:convert';
+
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:dio/dio.dart';
+import 'package:external_app_launcher/external_app_launcher.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_swiper_view/flutter_swiper_view.dart';
+import 'package:ro_ind_home_screen/src/individual/screens/api/model/card_model_page.dart';
+import 'package:ro_ind_home_screen/src/individual/screens/api/service/dio_helper.dart';
+import 'package:ro_ind_home_screen/src/individual/screens/api/service/repository/card_repo.dart';
+import 'package:ro_ind_home_screen/src/individual/screens/home_main/qr_scanner/qr_card.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+
+import '../theme/colors.dart';
+import '../widget/card.dart';
+
+class cardDesign extends StatefulWidget {
+  const cardDesign({Key? key}) : super(key: key);
+
+  @override
+  State<cardDesign> createState() => _cardDesignState();
+}
+
+class _cardDesignState extends State<cardDesign> {
+
+  final ApiHelper apiHelper =ApiHelper();
+  final CardRepo cardRepo = CardRepo();
+  late List<Carding?>cardImageList=[];
+
+  void initState(){
+    super.initState();
+    cardImageList=[];
+    getCard();
+  }
+
+  
+  getCard() async{
+ 
+    Response? response =await cardRepo.getCardImage();
+    try{
+      if(response!.statusCode==200){
+       var data= json.encode(response.data);
+       print(data);
+
+       CardImageModel result= cardImageModelFromJson(data);
+       cardImageList= result.cards;
+      }
+    }catch(e){
+      throw Exception("Inavalid code");
+    }
+
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.27,
+        width: MediaQuery.of(context).size.width * 0.91,
+        child: Swiper(itemCount:cardImageList.length,
+          itemWidth:MediaQuery.of(context).size.width * 0.84,
+          itemHeight:MediaQuery.of(context).size.height * 0.22,
+          loop: false,
+
+          duration: 800,
+          scrollDirection: Axis.horizontal,
+          // onIndexChanged: (index) {
+          //   if (index == cardImageList.length ) {
+          //     SwiperController swiperController = SwiperController();
+          //     swiperController.stopAutoplay(animation: false);
+          //   }
+          // },
+          itemBuilder: (context ,index){
+            return  GestureDetector(
+              onLongPress: () {
+                showDialog(context: context,
+                    builder: (BuildContext context){
+                      return AlertDialog(
+                        //icon: Icon(Icons.share,color: Colors.green),
+                        clipBehavior: Clip.none,
+                        shape: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                        content: Row(
+                          children: [
+                            Container(
+                              height:MediaQuery.of(context).size.height*0.06 ,
+                              width: MediaQuery.of(context).size.width*0.25,
+                              decoration: BoxDecoration(borderRadius: BorderRadius.circular(20,),border: Border.all(color: Colors.black,width: 2),
+                              ),
+                              child: Center(child: AutoSizeText("Edit",style: TextStyles.textStyle1,)),
+                            ),
+                            SizedBox(width: MediaQuery.of(context).size.width*0.05,),
+                            Container(
+                              height:MediaQuery.of(context).size.height*0.06 ,
+                              width: MediaQuery.of(context).size.width*0.25,
+                              decoration: BoxDecoration(borderRadius: BorderRadius.circular(20,),border: Border.all(color: Colors.black,width: 2),
+                              ),
+                              child: Center(child: AutoSizeText("Share",style: TextStyles.textStyle1,)),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                );
+              },
+              child:
+              Container(
+                height: 400,
+                width: 400,
+                decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image:  NetworkImage(cardImageList[index]!.cardImages.imageUrl), fit: BoxFit.cover,),
+                    borderRadius: BorderRadius.circular(20)
+                ),
+                child: Column(
+                  children: [
+                    Row(mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 15,top: 8),
+                          child: InkWell(onTap: (){Navigator.of(context).push(MaterialPageRoute(builder: (context) => cardQr(),));},
+                              child: Icon(Icons.qr_code,color: Colors.white,)),
+                        )
+                      ],
+                    ),
+                    Row(
+                      children: [
+
+                        Padding(
+                          padding: const EdgeInsets.only(left: 58),
+                          child: AutoSizeText(cardImageList[index]!.fullName,style: TextStyle(fontWeight: FontWeight.w700,fontSize: 20,color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 100,top: 10),
+                      child: InkWell(onTap: (){
+                        launchUrl(Uri.parse("mailto:carljohnes04@gmail.com"));
+                      },
+                        child: Row(
+                          children: [
+                            Icon(Icons.email_outlined,size: 20,color: Colors.white,),
+                            SizedBox(width: MediaQuery.of(context).size.width*0.01,),
+                            AutoSizeText(cardImageList[index]!.email,style: TextStyle(color: Colors.white,fontSize: 15,fontWeight: FontWeight.w400),)
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 100,top: 10),
+                      child: InkWell(onTap: (){
+                        launchUrl(Uri.parse("tel://+000123456789"));
+                      },
+                        child: Row(
+                          children: [
+                            Icon(Icons.call_outlined,size: 20,color: Colors.white,),
+                            SizedBox(width: MediaQuery.of(context).size.width*0.01,),
+                            AutoSizeText(cardImageList[index]!.phone.toString(),style: TextStyle(color: Colors.white,fontSize: 15,fontWeight: FontWeight.w400),)
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.only(top: 15),
+                      child: Row(
+                        children: [
+                          IconButton(onPressed: () async{
+                            await LaunchApp.openApp(androidPackageName: "com.instagram.android",);
+                          },
+                              icon: ImageIcon(AssetImage("assets/icons/instagram.png"),color: Colors.white,)),
+                          SizedBox(width: MediaQuery.of(context).size.width*0.01,),
+                          IconButton(onPressed:() async{
+                            await LaunchApp.openApp(androidPackageName: "com.whatsapp",);
+                          },
+                              icon:Icon(Icons.chat,size: 25,color: Colors.white,)),
+                          SizedBox(width: MediaQuery.of(context).size.width*0.01,),
+                          IconButton(onPressed:() async{
+                            await LaunchApp.openApp(androidPackageName: "com.twitter.android",);
+                          },
+                              icon: ImageIcon(AssetImage("assets/icons/twitter.png"),color: Colors.white,)),
+
+                          SizedBox(width: MediaQuery.of(context).size.width*0.01,),
+                          IconButton(onPressed:() async{
+                            await LaunchApp.openApp(androidPackageName: "com.facebook.katana",);
+                          },
+                              icon: ImageIcon(AssetImage("assets/icons/facebook.png"),color: Colors.white,)),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+          layout: SwiperLayout.STACK,
+        ),
+
+
+        // decoration: BoxDecoration(
+        //     image: DecorationImage(
+        //        image: AssetImage("assets/images/card.png"), fit: BoxFit.cover,),
+        //     borderRadius: BorderRadius.circular(15)),
+        // child: Padding(
+        //   padding: const EdgeInsets.only(left: 10,top: 30),
+        //   child: Column(
+        //     children: [
+        //       Text("Carl\nJohnson",style: TextStyle(fontSize: 30,fontWeight: FontWeight.w400,color: Colors.white)),
+        //       Row(
+        //         children: [
+        //           Icon(Icons.email_outlined,color: Colors.white),
+        //           Text("Carl123@gmail.com",style: TextStyle(color: Colors.white),)
+        //         ],
+        //       ),
+        //       Row(
+        //         children: [
+        //           Icon(Icons.phone,color: Colors.white),
+        //           Text("123456787",style: TextStyle(color: Colors.white),)
+        //         ],
+        //       ),
+        //       Row(
+        //         children: [
+        //
+        //           Padding(
+        //             padding: const EdgeInsets.all(8.0),
+        //             child: Icon(Icons.whatsapp,color: Colors.white,),
+        //           ),
+        //           Padding(
+        //             padding: const EdgeInsets.all(8.0),
+        //             child: Icon(Icons.telegram,color: Colors.white),
+        //           ),
+        //           Padding(
+        //             padding: const EdgeInsets.all(8.0),
+        //             child: Icon(Icons.facebook,color: Colors.white),
+        //           ),
+        //
+        //         ],
+        //       )
+        //     ],
+        //   ),
+        // ),
+      ),
+    );
+    //   Container(
+    //   height: MediaQuery.of(context).size.height *0.27,
+    //   width: MediaQuery.of(context).size.width *0.91,
+    //   // decoration: BoxDecoration(
+    //   //     image: DecorationImage(
+    //   //         image: AssetImage("assets/images/card2.png"),
+    //   //         fit: BoxFit.cover),
+    //   //     borderRadius: BorderRadius.circular(15)),
+    //   child: Card(
+    //     semanticContainer: true,
+    //     clipBehavior: Clip.antiAliasWithSaveLayer,
+    //     child: Image.asset('assets/images/card.png',fit:BoxFit.fill),
+    //     // Image.network(
+    //     //   'https://placeimg.com/640/480/any',
+    //     //   fit: BoxFit.fill,
+    //     // ),
+    //     shape: RoundedRectangleBorder(
+    //       borderRadius: BorderRadius.circular(10.0),
+    //     ),
+    //     elevation: 5,
+    //     margin: EdgeInsets.all(10),
+    //   ),
+    // );
+  }
+
+}
